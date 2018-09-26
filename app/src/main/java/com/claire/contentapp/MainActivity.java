@@ -58,6 +58,8 @@ public class MainActivity extends AppCompatActivity {
 
         //新增聯絡人
         //insertContact();
+        //updateContact();
+        //deleteContact();
     }
 
     //不論使用者選擇Deny拒絕或Allow允許，都會自動執行onRequestPermissionsResult方法
@@ -172,6 +174,45 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
+    }
+
+    private void updateContact(){
+        // WHERE的條件敘述，「名稱 = ? AND 資料格式=?」
+        String where = Phone.DISPLAY_NAME + " =? AND " + Data.MIMETYPE + " =?";
+        // 條件敘述中的隕料值，對應上面的兩個問號位置
+        String[] params = new String[]{"John", Phone.CONTENT_ITEM_TYPE};
+        //準備一個ArrayList集合，存放內容提供者操作
+        ArrayList ops = new ArrayList();
+        //建立一個更新操作，並加到集合中
+        ops.add(ContentProviderOperation.newUpdate(Data.CONTENT_URI)
+                .withSelection(where, params)
+                .withValue(Phone.NUMBER, "0900333333")
+                .build());
+        try {
+            //批次執行操作集合
+            getContentResolver().applyBatch(ContactsContract.AUTHORITY, ops);
+        } catch (RemoteException e){
+            e.printStackTrace();
+        } catch (OperationApplicationException e){
+            e.printStackTrace();
+        }
+    }
+
+    private void deleteContact(){
+        // WHERE的條件敘述，「名稱 =?」
+        String where = Data.DISPLAY_NAME + " =? ";
+        String[] params = new String[]{"Jane"};
+        ArrayList ops = new ArrayList();
+        ops.add(ContentProviderOperation.newDelete(RawContacts.CONTENT_URI)
+                    .withSelection(where, params)
+                    .build());
+        try {
+            getContentResolver().applyBatch(ContactsContract.AUTHORITY, ops);
+        } catch (RemoteException e){
+            e.printStackTrace();
+        } catch (OperationApplicationException e){
+            e.printStackTrace();
+        }
     }
 
 }
