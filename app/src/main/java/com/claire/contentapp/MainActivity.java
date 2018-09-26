@@ -1,6 +1,7 @@
 package com.claire.contentapp;
 
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.provider.ContactsContract;
@@ -12,12 +13,13 @@ import android.os.Bundle;
 //權限取得前，先import以下兩種
 import android.Manifest;
 import android.util.Log;
+import android.view.View;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 
 import static android.Manifest.permission.*;
 import android.provider.ContactsContract.Contacts;
-import android.provider.ContactsContract.CommonDataKinds.Phone;
+import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -70,27 +72,56 @@ public class MainActivity extends AppCompatActivity {
         //1.前取很ContentResolver物件
         ContentResolver resolver = getContentResolver();
         //2.查詢手機中的所有聯絡人，並得到cursor物件
-        //當不需要顯示無電話的聯絡人時，可使用[Implicit Join]隱性合併查詢的方式呼叫
-        String[] projection = {Contacts._ID,
-                Contacts.DISPLAY_NAME,
-                Phone.NUMBER};
 
         Cursor cursor = resolver.query(
-             Phone.CONTENT_URI,
-            projection,
+             Contacts.CONTENT_URI,
+            null,
             null,
             null,
             null);
 
-        ListView list = findViewById(R.id.list);
         SimpleCursorAdapter adapter = new SimpleCursorAdapter(
                 this,
                 android.R.layout.simple_list_item_2,
                 cursor,
-                new String[]{Contacts.DISPLAY_NAME, Phone.NUMBER}, //String[]from字串陣列
+                new String[]{Contacts.DISPLAY_NAME,Contacts.HAS_PHONE_NUMBER}, //String[]from字串陣列
                 new int[]{android.R.id.text1, android.R.id.text2}, //欄位對應畫面上應顯示的ID值陣列
-                1);
+                1){
+                //客製化
+                @Override
+                public void bindView(View view, Context context, Cursor cursor) {
+                    super.bindView(view, context, cursor);
+                    //先取得單列中第二個用來顯示電話號碼的TextView元件
+                    TextView phone = view.findViewById(android.R.id.text2);
+                    //由cursor取得HAS_PHONE_NUMBER欄位的值，若該列的值是0，代表聯絡人無電話資料，顯示空字串
+                    if (cursor.getInt(cursor.getColumnIndex(Contacts.HAS_PHONE_NUMBER)) == 0){
+                        phone.setText("");
+                    }else {
+                        //取得聯絡人的ID值
+                        int id = cursor.getInt(cursor.getColumnIndex(Contacts._ID));
+
+                        //進行二次查詢，查詢電話號碼表格
+                        Cursor pCursor = getContentResolver().query(
+                                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                                null,
+                                //查詢條件是電話表格中的外鍵值Phone_CONTACT_ID
+                                ContactsContract.CommonDataKinds.Phone.CONTACT_ID +"=?",
+                                new String[]{String.valueOf(id)}, //為上面條件提供資料
+                                null);
+
+                        //先將第二次查詢結果的pCursor往下移一筆，若有資料則取得第一個電話顯示在第二個欄位的TextView元件中
+                        if (pCursor.moveToFirst()){
+                            String number = pCursor.getString(pCursor.getColumnIndex(
+                                    ContactsContract.CommonDataKinds.Phone.DATA));
+                            phone.setText(number);
+                        }
+                    }
+                }
+        };
+
+        ListView list = findViewById(R.id.list);
         list.setAdapter(adapter);
 
     }
+
 }
