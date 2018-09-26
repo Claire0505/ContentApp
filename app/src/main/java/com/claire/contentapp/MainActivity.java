@@ -1,6 +1,9 @@
 package com.claire.contentapp;
 
+import android.content.ContentResolver;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
@@ -8,6 +11,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 //權限取得前，先import以下兩種
 import android.Manifest;
+import android.util.Log;
+import android.widget.ListView;
+import android.widget.SimpleCursorAdapter;
+
 import static android.Manifest.permission.*;
 
 public class MainActivity extends AppCompatActivity {
@@ -58,5 +65,33 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void readContacts() {
+        //1.前取很ContentResolver物件
+        ContentResolver resolver = getContentResolver();
+        //2.查詢手機中的所有聯絡人，並得到cursor物件
+        Cursor cursor = resolver.query(
+            ContactsContract.Contacts.CONTENT_URI,
+            null,
+            null,
+            null,
+            null);
+
+        //3.使用while回圈依次處理查詢結果的每一筆資料
+//        while (cursor.moveToNext()){
+//            //處理每一筆資料
+//            int id = cursor.getInt(cursor.getColumnIndex(ContactsContract.Contacts._ID));
+//            String name = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+//            Log.d("RECORD ", id + "/" + name);
+//        }
+
+        ListView list = findViewById(R.id.list);
+        SimpleCursorAdapter adapter = new SimpleCursorAdapter(
+                this,
+                android.R.layout.simple_list_item_1,
+                cursor,
+                new String[]{ContactsContract.Contacts.DISPLAY_NAME},
+                new int[]{android.R.id.text1},
+                1);
+        list.setAdapter(adapter);
+
     }
 }
