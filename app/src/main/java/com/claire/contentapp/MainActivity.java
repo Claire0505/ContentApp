@@ -16,6 +16,8 @@ import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 
 import static android.Manifest.permission.*;
+import android.provider.ContactsContract.Contacts;
+import android.provider.ContactsContract.CommonDataKinds.Phone;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -68,28 +70,25 @@ public class MainActivity extends AppCompatActivity {
         //1.前取很ContentResolver物件
         ContentResolver resolver = getContentResolver();
         //2.查詢手機中的所有聯絡人，並得到cursor物件
+        //當不需要顯示無電話的聯絡人時，可使用[Implicit Join]隱性合併查詢的方式呼叫
+        String[] projection = {Contacts._ID,
+                Contacts.DISPLAY_NAME,
+                Phone.NUMBER};
+
         Cursor cursor = resolver.query(
-            ContactsContract.Contacts.CONTENT_URI,
-            null,
+             Phone.CONTENT_URI,
+            projection,
             null,
             null,
             null);
 
-        //3.使用while回圈依次處理查詢結果的每一筆資料
-//        while (cursor.moveToNext()){
-//            //處理每一筆資料
-//            int id = cursor.getInt(cursor.getColumnIndex(ContactsContract.Contacts._ID));
-//            String name = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
-//            Log.d("RECORD ", id + "/" + name);
-//        }
-
         ListView list = findViewById(R.id.list);
         SimpleCursorAdapter adapter = new SimpleCursorAdapter(
                 this,
-                android.R.layout.simple_list_item_1,
+                android.R.layout.simple_list_item_2,
                 cursor,
-                new String[]{ContactsContract.Contacts.DISPLAY_NAME},
-                new int[]{android.R.id.text1},
+                new String[]{Contacts.DISPLAY_NAME, Phone.NUMBER}, //String[]from字串陣列
+                new int[]{android.R.id.text1, android.R.id.text2}, //欄位對應畫面上應顯示的ID值陣列
                 1);
         list.setAdapter(adapter);
 
