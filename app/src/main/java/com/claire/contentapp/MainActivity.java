@@ -1,9 +1,13 @@
 package com.claire.contentapp;
 
+import android.content.ContentProvider;
+import android.content.ContentProviderOperation;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.OperationApplicationException;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.os.RemoteException;
 import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -20,6 +24,14 @@ import android.widget.SimpleCursorAdapter;
 import static android.Manifest.permission.*;
 import android.provider.ContactsContract.Contacts;
 import android.widget.TextView;
+
+import java.util.ArrayList;
+import android.provider.ContactsContract.RawContacts;
+import android.provider.ContactsContract.Data;
+import android.provider.ContactsContract.CommonDataKinds.StructuredName;
+import android.provider.ContactsContract.CommonDataKinds.Phone;
+import android.content.OperationApplicationException;
+import android.os.RemoteException;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -43,6 +55,9 @@ public class MainActivity extends AppCompatActivity {
             //已有權限，可進行檔案存取
             readContacts();
         }
+
+        //新增聯絡人
+        //insertContact();
     }
 
     //不論使用者選擇Deny拒絕或Allow允許，都會自動執行onRequestPermissionsResult方法
@@ -121,6 +136,41 @@ public class MainActivity extends AppCompatActivity {
 
         ListView list = findViewById(R.id.list);
         list.setAdapter(adapter);
+
+    }
+
+    private void insertContact(){
+        //準備一個ArrayList集合，存放內容提供者操作
+        ArrayList ops = new ArrayList();
+        //準備索引值預設為0
+        int index = ops.size();
+        //建立一個新增資料操作，並加到操作集合中，資料對象是RawContacts，新增後會得到其ID值
+        ops.add(ContentProviderOperation
+                .newInsert(RawContacts.CONTENT_URI)
+                .withValue(RawContacts.ACCOUNT_TYPE, null)
+                .withValue(RawContacts.ACCOUNT_NAME, null).build());
+        //建立一個新增資料操作，並加到操作集合中，資料對象是ContactsContract.Data，
+        // 取得上一個新增至RawContacts記錄的ID值，此段主要是寫入聯絡人姓名
+        ops.add(ContentProviderOperation
+                .newInsert(ContactsContract.Data.CONTENT_URI)
+                .withValueBackReference(Data.RAW_CONTACT_ID,index)
+                .withValue(Data.MIMETYPE, StructuredName.CONTENT_ITEM_TYPE)
+                .withValue(StructuredName.DISPLAY_NAME, "John").build());
+        //建立新增到Phone的電話號碼操作，亦使用到第一個新增RawContacts操作後得到的ID值
+        ops.add(ContentProviderOperation
+                .newInsert(Data.CONTENT_URI)
+                .withValueBackReference(Data.RAW_CONTACT_ID,index)
+                .withValue(Data.MIMETYPE, Phone.CONTENT_ITEM_TYPE)
+                .withValue(Phone.NUMBER, "0900123456")
+                .withValue(Phone.TYPE, Phone.TYPE_MOBILE).build());
+
+        try {
+            getContentResolver().applyBatch(ContactsContract.AUTHORITY, ops);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        } catch (OperationApplicationException e) {
+            e.printStackTrace();
+        }
 
     }
 
